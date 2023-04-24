@@ -190,10 +190,10 @@ int main()
         o = shell_command_param_split(t[i].input, &cmdb, &cmde, &paramsb, &paramse, &context);
         if (o == SOP_REDIR_OUT || o == SOP_REDIR_OUT_APPEND) {
             shell_next_token(NULL, &redir_begin, &redir_end, &context);
-            printf("%s  % .*s\n", 0 == strncmp(t[i].cmd, cmdb, cmde - cmdb)
+            printf("%s  %.*s\n", 0 == strncmp(t[i].cmd, cmdb, cmde - cmdb)
                 && 0 == strncmp(t[i].params, paramsb, paramse - paramsb)
                 && 0 == strncmp(t[i].redir, redir_begin, redir_end - redir_begin)
-                && o == t[i].oper ? "PASS" : "FAIL", redir_end - redir_begin, redir_begin);
+                && o == t[i].oper ? "PASS" : "FAIL", (int)(redir_end - redir_begin), redir_begin);
         }
         else {
             printf("%s\n", 0 == strncmp(t[i].cmd, cmdb, cmde - cmdb) && 0 == strncmp(t[i].params, paramsb, paramse - paramsb) && o == t[i].oper ? "PASS" : "FAIL");
