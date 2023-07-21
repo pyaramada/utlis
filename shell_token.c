@@ -202,8 +202,8 @@ void shell_next_token(const char* input, const char** token_begin, const char** 
 #include <string.h>
 
 #define MAX_CMDS_IN_ONE_INPUT 4
-#define MAX_INPUT_BUFSIZ      100
-#define MAX_FRAG_BUFSIZ       50
+#define MAX_INPUT_BUFSIZ      400
+#define MAX_FRAG_BUFSIZ       200
 #define NELEMS(x)  (sizeof(x) / sizeof((x)[0]))
 int main()
 {
@@ -223,12 +223,14 @@ int main()
         char input[MAX_INPUT_BUFSIZ];
         struct {
             char cmd[MAX_FRAG_BUFSIZ];
-            char params[MAX_FRAG_BUFSIZ];
+            char params[MAX_INPUT_BUFSIZ];
             enum shell_operator oper;
             enum shell_redir redir_kind;
             char redir[MAX_FRAG_BUFSIZ];
         } shell_cmd[MAX_CMDS_IN_ONE_INPUT];
     } t[] = {
+        {"echo 2 > /proc/sys/net/ipv4/conf/bridge0.1/arp_ignore",
+                                                {"echo", "2",                   SOP_NONE,       SOP_REDIR_OUT,         "/proc/sys/net/ipv4/conf/bridge0.1/arp_ignore"}},
         {"",                                    {"",     "",                    SOP_NONE,       SOP_REDIR_NONE,        ""}}, /* no cmd */
         {" ",                                   {"",     "",                    SOP_NONE,       SOP_REDIR_NONE,        ""}},  /* empty cmd */
         {" echo >",                             {"echo", "",                    SOP_NONE,       SOP_REDIR_OUT,         ""}},  /* no param and no redir value */
@@ -258,6 +260,25 @@ int main()
                                                 { "echo", "2",                  SOP_AND,        SOP_REDIR_OUT,          "/dev/bar"},
                                                 { "echo", "3",                  SOP_AND,        SOP_REDIR_OUT_APPEND,   "tree"},
                                                 { "cat",  "foo",                SOP_NONE,       SOP_REDIR_NONE,         ""}}},
+        {"echo dnsmasq --conf-file=/etc/data/dnsmasq.conf"
+        " --dhcp-leasefile=/var/run/data/dnsmasq.leases"
+        " --addn-hosts=/etc/data/hosts --pid-file=/var/run/data/dnsmasq.pid"
+        " -i bridge0 -I lo -z --dhcp-script=/bin/dnsmasq_script.sh type_inst=dnsv4"
+        " > /var/run/data/dnsmasq_env.conf",    {"echo", "dnsmasq --conf-file=/etc/data/dnsmasq.conf --dhcp-leasefile=/var/run/data/dnsmasq.leases"
+                                                         " --addn-hosts=/etc/data/hosts --pid-file=/var/run/data/dnsmasq.pid -i bridge0 -I lo -z"
+                                                         " --dhcp-script=/bin/dnsmasq_script.sh type_inst=dnsv4",
+                                                                                SOP_NONE,       SOP_REDIR_OUT,          "/var/run/data/dnsmasq_env.conf"}},
+        {"echo QCMAP:qcmap_netlink_thread Entry for pid:922, tid:1035, ppid:1 > /dev/kmsg",
+                                                {"echo", "QCMAP:qcmap_netlink_thread Entry for pid:922, tid:1035, ppid:1",
+                                                                                SOP_NONE,       SOP_REDIR_OUT,          "/dev/kmsg"}},
+        {"echo 0 > /proc/sys/net/ipv4/conf/bridge5/proxy_arp"
+        " && echo 0 > /proc/sys/net/ipv4/conf/bridge5/forwarding"
+        " && echo 1 > /proc/sys/net/ipv4/neigh/default/neigh_probe"
+        " && echo 1 > /proc/sys/net/ipv6/neigh/default/neigh_probe",
+                                               {{ "echo", "0",                  SOP_AND,        SOP_REDIR_OUT,          "/proc/sys/net/ipv4/conf/bridge5/proxy_arp"},
+                                                { "echo", "0",                  SOP_AND,        SOP_REDIR_OUT,          "/proc/sys/net/ipv4/conf/bridge5/forwarding"},
+                                                { "echo", "1",                  SOP_AND,        SOP_REDIR_OUT,          "/proc/sys/net/ipv4/neigh/default/neigh_probe"},
+                                                { "echo", "1",                  SOP_NONE,       SOP_REDIR_OUT,          "/proc/sys/net/ipv6/neigh/default/neigh_probe"}}},
     };
 
     for (int i = 0; i < NELEMS(t); i++) {
