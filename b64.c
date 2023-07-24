@@ -9,7 +9,21 @@
 
 #define ENOERR 0
 
-int b64_encode(const uint8_t* input, size_t in_length,
+/**
+ * Base64 encode an input buffer to an output string buffer
+ *  null-terminates the output string
+ * @see https://datatracker.ietf.org/doc/html/rfc4648#section-4
+ *
+ * @param input
+ * @param in_length
+ * @param output
+ * @param out_length
+ * @param required : optional output parameter to get the required output buffer size
+ * @return
+ *     ENOERR on success
+ *     ENOSPACE if the output buffer is too small
+*/
+static int b64_encode(const uint8_t* input, size_t in_length,
                char* output, size_t out_length,
                size_t *required)
 {
@@ -46,19 +60,34 @@ int b64_encode(const uint8_t* input, size_t in_length,
 
 static inline uint8_t b64_decode_bin(char c)
 {
-    return (c >= 'A' && c <= 'Z') ? c - 'A' :
-           (c >= 'a' && c <= 'z') ? c - 'a' + 26 :
-           (c >= '0' && c <= '9') ? c - '0' + 52 :
-           (c == '+') ? 62 :
-           (c == '/') ? 63 : 0;    
+    // NOTE: This may be a bit inefficent, compared to a 256byte map.
+    return (c >= 'A' && c <= 'Z') ?  (uint8_t)(c - 'A')
+           : (c >= 'a' && c <= 'z') ? (uint8_t)(c - 'a' + 26)
+           : (c >= '0' && c <= '9') ? (uint8_t)(c - '0' + 52)
+           : (c == '+') ? (uint8_t)62
+           : (c == '/') ? (uint8_t)63
+           : (uint8_t)0;
 }
 
-int b64_decode(const char* input, size_t input_length,
+/**
+ * Base64 decode an input string buffer to an output buffer
+ * @see https://datatracker.ietf.org/doc/html/rfc4648#section-4
+ *
+ * @param input : null-terminated input string
+ * @param input_length : length of input string
+ * @param output : output buffer
+ * @param output_length : length of output buffer
+ * @param required : optional output parameter to get the required output buffer size
+ * @return
+ *    ENOERR on success
+ *    ENOMEM if the output buffer is too small
+*/
+static int b64_decode(const char* input, size_t input_length,
                uint8_t* output, size_t output_length,
                size_t* required)
 {
-    int i, j = 0;
-    unsigned char a, b, c, d;
+    size_t i, j = 0;
+    uint8_t a, b, c, d;
     int rc = ENOERR;
     size_t output_size = strlen(input) * 3 / 4; // Calculate the maximum size for the output buffer
 
@@ -73,11 +102,11 @@ int b64_decode(const char* input, size_t input_length,
         c = b64_decode_bin(input[i + 2]);
         d = b64_decode_bin(input[i + 3]);
 
-        output[j++] = (a << 2) | (b >> 4);
+        output[j++] = (uint8_t)(a << 2) | (b >> 4);
         if (input[i + 2] != '=' && j < output_length)
-            output[j++] = (b << 4) | (c >> 2);
+            output[j++] = (uint8_t)(b << 4) | (c >> 2);
         if (input[i + 3] != '=' && j < output_length)
-            output[j++] = (c << 6) | d;
+            output[j++] = (uint8_t)(c << 6) | d;
     }
 
     output_size = j;
